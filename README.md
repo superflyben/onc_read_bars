@@ -1,2 +1,2 @@
-# onc_read_bars
-R script for reading and combining daily log files from BARS instrument on Ocean Networks Canada
+## R script for reading log files from  Ocean Networks Canada
+This is a short R-script that reads the daily log files from the Benthic And Resistivity Sensors (BARS) instrument package installed on the underwater observatory run by Ocean Networks Canada. These log files contain the raw instrument output, and may include bad entries or instrument commands which are not easily read with R's standards data reading functions. The script in this repository handles this probelm by using a combination of the low level readLines function and the try-catch feature to scavenge any good data available in the file. These entries are added to the main storage array, which is written out to a csv file at the end.
