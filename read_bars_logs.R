@@ -31,8 +31,8 @@ bars_class <- c("character",rep("numeric",12))
 #       numeric
 for(i in seq_along(t_vec)) {
 
-    file_name <- paste0("OESUWBARS001_", format(t_vec[i], "%Y%m%d")
-                        ,"T000000.000Z.txt.gz")
+    file_name <- paste0("OESUWBARS001_", format(t_vec[i], "%Y%m%d"),
+                        "T000000.000Z.txt.gz")
 
     #Construct read command
     read_cmd_opt <- c(", stringsAsFactors = FALSE,"
@@ -93,8 +93,8 @@ bars_data$hour <- bars_time$hour
 bars_data$minute <- bars_time$min
 bars_data$second <- bars_time$sec
 
-#Write out results to csv for reading into Matlab
-setwd("C:/Users/ben/Dropbox/2015_EGU/calibration_data")
+# Write out results to csv for reading into Matlab
+# setwd("C:/Users/ben/Dropbox/2015_EGU/calibration_data")
 write.table(bars_data, file = "raw_bars_data.csv", sep = ","
             , col.names = TRUE, row.names = FALSE)
 #}
