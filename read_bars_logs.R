@@ -84,7 +84,7 @@ save(bars_cols, bars_data, bad_data_rows, file = "raw_bars_data.rdata")
 bars_data$Time <- NULL
 
 #Add parsed time back to data frame as new columns
-#Year starts from 190
+#Year starts from 1900
 bars_data$year <- bars_time$year + 1900
 #Months are indexed 0-11, so add 1 to get the correct number
 bars_data$month <- bars_time$mon + 1
