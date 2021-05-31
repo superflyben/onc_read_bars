@@ -2,11 +2,16 @@
 #keeping the good ones in one variable and a record of the bad indices in a
 #separate variable
 
-read_bad_data <- function(file_name, read_cmd_opt) {
-    #Read data in with low-level function
-
-    con = gzfile(file_name)
-    data_lines <- readLines(con)
+read_bad_data <- function(file_w_bad_data) {
+    
+    # Connect to zip file in data directory 
+    # NOTE: have to re-do this b/c even if read.table returns lines
+    #       with NA, it will still close the connection
+    file_con <- gzfile(paste0(data_dir, "/", file_w_bad_data))
+    
+    # Read from connection with low-level function, and close the connection
+    data_lines <- file_con %>% readLines()
+    close(file_con)
 
     #Initiate local storage variables and indices
     good_read <- c()
@@ -14,38 +19,46 @@ read_bad_data <- function(file_name, read_cmd_opt) {
 
     #Loop over all lines
     for(i in seq_along(data_lines)) {
-        #Construct read command
-        read_cmd_full <- c("read.table(text = data_lines[i]", read_cmd_opt)
-
-        #Attempt read command
-        #NOTE: try portion returns last evaluated expression if successful,
-        #   this means can't use a counter inside the try part: if before the
-        #   expr., counter may be incremented even without success evaluating
-        #   expr, if after the expr, tryCatch will return value of counter
+        
+        # Show progress
+        if(i == 1 | i %% 1000 == 0) {
+            print(paste0("Row ", i, " of ", length(data_lines)))
+        }
+        
+        # Attempt read command
         out <- tryCatch(
+            
             {
-                eval(parse(text = read_cmd_full))
-
+                # Call function to read data 
+                data_lines[i] %>% 
+                    read.table(text = .,
+                               col.names = bars_cols, 
+                               colClasses = bars_class, 
+                               stringsAsFactors = FALSE,
+                               fill = TRUE)
             },
             error = function(cond) {
+                message(cond)
                 return(NA)
-            },
-            finally = {
-                #Show progress
-                #message()
             }
+            
         )
+        
         if(!anyNA(out)) {
-            #Bind successful read to storage variable
-            good_read <- rbind(good_read,out)
-        }
-        else {
-            #Add index of bad entry to storage variable
+            
+            # Bind successful read to storage variable
+            good_read <- bind_rows(good_read, out)
+            
+        } else {
+            
+            # If bad, add index of bad entry to storage variable
             bad_idx <- c(bad_idx,i)
+            
         }
     }
-    close(con)
-    #Store all output in list for transfer to calling function
-    out_list <- list(clean_data = good_read, reject = bad_idx)
+    
+    # Close connection and Store output in list for transfer to calling function
+    out_list <- list(clean_data = good_read, 
+                     reject = bad_idx)
 }
 
