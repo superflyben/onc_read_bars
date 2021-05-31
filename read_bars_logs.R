@@ -89,6 +89,13 @@ read_bars_logs <- function(data_dir) {
         # available
         if(anyNA(log_data)) {
             
+            writeLines(paste0("read_bars_logs: Found bad entries, ",
+                              "calling read_bad_data for ", dat_file))
+            
+            # Source the read_bad_data function from the local environmnet so 
+            # it uses variables created from within the function 
+            source("read_bad_data.R", local = TRUE)
+            
             # Call the function 
             out_list <- dat_file %>% read_bad_data()
             # Extract the good data
@@ -135,10 +142,3 @@ read_bars_logs <- function(data_dir) {
     
 }
 
-# Source and call the functions
-source("read_bars_logs.R")
-source("read_bad_data.r")
-
-# Call the function 
-# Will save the good stuff, just to have a look at the bad
-bad_data_rows <- read_logs("raw_data/search20142943/")
