@@ -92,7 +92,7 @@ read_bars_logs <- function(data_dir) {
             writeLines(paste0("read_bars_logs: Found bad entries, ",
                               "calling read_bad_data for ", dat_file))
             
-            # Source the read_bad_data function from the local environmnet so 
+            # Source the read_bad_data function from the local environment so 
             # it uses variables created from within the function 
             source("read_bad_data.R", local = TRUE)
             

@@ -6,7 +6,8 @@ read_bad_data <- function(file_w_bad_data) {
     
     # Connect to zip file in data directory 
     # NOTE: have to re-do this b/c even if read.table returns lines
-    #       with NA, it will still close the connection
+    #       with NA, it will still close the connection, and even if it didn't
+    #       file conneciton doesn't seem to survive the function call
     file_con <- gzfile(paste0(data_dir, "/", file_w_bad_data))
     
     # Read from connection with low-level function, and close the connection
@@ -38,7 +39,6 @@ read_bad_data <- function(file_w_bad_data) {
                                fill = TRUE)
             },
             error = function(cond) {
-                message(cond)
                 return(NA)
             }
             
