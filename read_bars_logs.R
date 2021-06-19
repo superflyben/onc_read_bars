@@ -1,4 +1,5 @@
-#Script to read in log files of BARS data and parse reults
+# Function to read in log files of BARS data and parse reults
+
 library(lubridate)
 library(tidyverse)
 
@@ -129,7 +130,7 @@ read_bars_logs <- function(data_dir) {
     
     # Export 
     
-    # Construct a date tage
+    # Construct a date tag
     date_tag <- paste0(min(file_dates), "_", max(file_dates))
     # save processed data
     saveRDS(bars_data, 

@@ -1,6 +1,5 @@
-#Script to try a read command, and if it fails, invoke read line by line,
-#keeping the good ones in one variable and a record of the bad indices in a
-#separate variable
+# Function to read bad sections of data line by line, keeping the good ones in
+# one variable and a record of the bad indices in a separate variable
 
 read_bad_data <- function(file_w_bad_data) {
     
