@@ -104,7 +104,7 @@ body <- dashboardBody(
               
               column(
                 
-                width = 8,
+                width = 12,
                 box(width = NULL, 
                     solidHeader = T,
                     # --> put plot output here, need to know type and name
@@ -155,11 +155,13 @@ server <- function(input, output) {
   output$four_panel_ts <- renderPlotly({
     
     # --> Create plot using updated data frame, ts_get
-    fig <- iris %>%
-      group_by(Species) %>%
-      do(p=plot_ly(., x = ~Sepal.Length, y = ~Sepal.Width, 
-                   color = ~Species, type = "scatter", mode = "markers")) %>%
-      subplot(nrows = 1, shareX = TRUE, shareY = TRUE)
+    # fig <- iris %>%
+    #   group_by(Species) %>%
+    #   do(p=plot_ly(., x = ~Sepal.Length, y = ~Sepal.Width, 
+    #                color = ~Species, type = "scatter", mode = "markers")) %>%
+    #   subplot(nrows = 1, shareX = TRUE, shareY = TRUE)
+    # 
+    fig <- readRDS("output/voltage_temp_time_series.rds")
     
     return(fig)
     
