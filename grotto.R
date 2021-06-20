@@ -2,6 +2,11 @@
 
 # Housekeeping
 library(tidyverse)
+library(plotly)
+
+# get_data ----------------------------------------------------------------
+# --> eventually replace this seciton with a data read statement that gets
+#     data ouput from vent specific script
 
 # Source the functions
 source("read_bars_logs.R")
@@ -64,6 +69,7 @@ data <- rds_files %>%
         
         print(paste0("Processing: ", date_range))
         
+        # Read the data file
         file_to_read %>%
             readRDS() %>% 
             mutate(date_range)
@@ -71,10 +77,48 @@ data <- rds_files %>%
     }) %>% 
     bind_rows()
 
-head(data)
-summary(data)
+data %>% saveRDS("output/grotto_app_data_bars.rds")
 
+# Adjustable Parameters ---------------------------------------------------
 
+# Individual data set to load. --------------------------------------------
+# NOTE: Using discrete data sets improves speed (I think) (exclusive radio button)
+date_range_var <- unique(data$date_range)[8]
+
+# Get file date bounds
+# NOTE: This will help with resricting time window to speed up plotting
+date_range_bounds <- date_range_var %>% 
+    str_split("_") %>% 
+    unlist()
+
+# Re-sampling -------------------------------------------------------------
+# NOTE: sampling is one sample every 20 seconds, so 3 data points per minute
+#       so keeping every third row, gives about 1 data point per minute, 
+#       either slide or manual input (probably single slider)
+keep_every_n_row <- 3 
+
+# Re-sample data to make it more manageable (only if non-default value)
+# NOTE: done by data_range tag to make sure original data sets are treated
+#       equally regardless of number of data points
+if(keep_every_n_row != 1) {
+    data <- data %>% 
+        group_by(date_range) %>%
+        mutate(rowid = row_number()) %>% 
+        slice(which(rowid %% keep_every_n_row == 1)) %>% 
+        ungroup()
+}
+
+# Time window -------------------------------------------------------------
+# Maximum number of days to display, more results in slower plot generation 
+max_window_days <- 7
+
+# Time boundaries ---------------------------------------------------------
+# NOTE: defaults to start date in individual dataset data_range tag
+#       and 7 days after
+t1 <- ymd(date_range_bounds[1], tz = "GMT")
+t2 <- min(ymd(date_range_bounds[2], tz = "GMT"), t1 + days(max_window_days))
+
+# Data Prep ---------------------------------------------------------------
 # Melt the relevant columns
 data_long <- data %>% 
     gather(key = data_type, 
@@ -84,45 +128,69 @@ data_long <- data %>%
            Hi_V,
            Hi_T)
 
-# Running into memory issues, may need to break the data down into time periods 
-# or look into increasing memory 
-
-# For starters, count the data points by segment, to see if there are reasonable
-# ways to break it down
-data_long %>% count(date_range) 
-
-# A year's data is just too much, maybe restrict to 90 days
-# And also need to force Voltage to share an axis, switch unit and loc
+# Counts for diagnostic purposes
+# data_long %>% count(date_range) 
 
 # units and location
+# Might be easier to keep type and unit together
 data_long <- data_long %>% 
     separate(data_type, 
              into = c("loc", "unit"), 
-             sep = "_")
-
-# Restrict data to avoid memory issues
-# --> Loop over individual data sets 
-date_range_var <- unique(data_long$date_range)[8]
-date_range_bounds <- date_range_var %>% 
-    str_split("_") %>% 
-    unlist()
-
-t1 <- ymd(date_range_bounds[1], tz = "GMT")
-t2 <- min(ymd(date_range_bounds[2], tz = "GMT"), t1 + days(30))
+             sep = "_", 
+             remove = FALSE)
 
 # Filter to time range
 data_long_chunk <- data_long %>% 
-    select(time_stamp, data_val, loc, unit) %>% 
+    select(time_stamp,
+           data_val,
+           loc,
+           unit, 
+           data_type) %>% 
     filter(time_stamp >= t1,
            time_stamp <= t2)
 
-# generate plot with 
-p <- data_long_chunk %>% 
-    ggplot(aes(x = time_stamp, 
-               y = data_val)) +
-    geom_point() + 
-    facet_wrap(~loc + unit, 
-               nrow = 2, 
-               scales = "free")
-p    
+# Plotting ----------------------------------------------------------------
+# Make time series plot with plotly
+voltage_temp_time_series <- data_long_chunk %>% 
+    mutate(data_type = factor(data_type, levels = c("Hi_T", "Ref_T", "Hi_V", "Ref_V"))) %>% 
+    mutate_at(vars(c("loc", "unit")), factor) %>% 
+    group_by(data_type) %>% 
+    # sample_n(20) %>% # Helps with development so graphics generate more quickly
+    do(p = plot_ly(., 
+                   x = ~time_stamp, 
+                   y = ~data_val, 
+                   color = ~data_type,
+                   colors = "Dark2",
+                   symbol = ~unit, 
+                   symbols = c("circle", "square"),
+                   type = "scatter", 
+                   mode = "markers")) %>% 
+    subplot(nrows = 2, shareX = TRUE) %>% 
+    layout(
+        annotations = list(
+            list(x = 0.2 , y = 1, text = "Hi_T", showarrow = F, xref='paper', yref='paper'),
+            list(x = 0.8 , y = 1, text = "Ref_T", showarrow = F, xref='paper', yref='paper'),
+            list(x = 0.2 , y = 0.5, text = "Hi_V", showarrow = F, xref='paper', yref='paper'),
+            list(x = 0.8 , y = 0.5, text = "Ref_V", showarrow = F, xref='paper', yref='paper')),
+        
+        # Y-axis custom labels
+        yaxis = list(title = "A"),
+        yaxis2 = list(title = "B"),
+        yaxis3 = list(title = "C"),
+        yaxis4 = list(title = "D"))
+voltage_temp_time_series
 
+# generate plot using ggplotly
+# NOTE: code is more elegant but method is otherwise much slower.
+# p <- data_long_chunk %>%
+#     group_by(loc, unit) %>% # use if creating ggplot
+#     ggplot(aes(x = time_stamp,
+#                y = data_val)) +
+#     geom_point() +
+#     facet_wrap(~unit + loc,
+#                nrow = 2,
+#                scales = "free")
+# p <- p %>% ggplotly()
+# p
+    
+    
